@@ -1,6 +1,6 @@
 {
   "name": "markedit-native-selection",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "macOS-style text selections.",
   "scripts": {
     "build": "vite build",

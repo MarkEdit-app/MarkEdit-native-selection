@@ -61,6 +61,34 @@ export function visualRows(view: EditorView, element: HTMLElement): VisualRow[] 
   });
 
   groups.sort((lhs, rhs) => lhs.center - rhs.center);
+  const style = window.getComputedStyle(element);
+  const lineHeight = parseFloat(style.lineHeight) * view.scaleY;
+
+  // WebKit predictive text can omit range rectangles after the caret
+  if (lineHeight > 0) {
+    const contentTop = lineBounds.top + (parseFloat(style.paddingTop) + parseFloat(style.borderTopWidth)) * view.scaleY;
+    const contentBottom = lineBounds.bottom - (parseFloat(style.paddingBottom) + parseFloat(style.borderBottomWidth)) * view.scaleY;
+    const contentHeight = contentBottom - contentTop;
+    const rowCount = Math.round(contentHeight / lineHeight);
+    const tolerance = view.scaleY;
+
+    const fitsUniformRows = rowCount > groups.length &&
+      Math.abs(contentHeight - rowCount * lineHeight) <= tolerance &&
+      groups.every(group => {
+        const index = Math.floor((group.center - contentTop) / lineHeight);
+        const top = contentTop + index * lineHeight;
+        return index >= 0 && index < rowCount &&
+          group.top >= top - tolerance && group.bottom <= top + lineHeight + tolerance;
+      });
+
+    if (fitsUniformRows) {
+      return Array.from({ length: rowCount }, (_, index) => row(
+        index === 0 ? lineBounds.top : contentTop + index * lineHeight,
+        index === rowCount - 1 ? lineBounds.bottom : contentTop + (index + 1) * lineHeight,
+      ));
+    }
+  }
+
   return groups.map((group, index) => {
     const top = index === 0
       ? lineBounds.top
